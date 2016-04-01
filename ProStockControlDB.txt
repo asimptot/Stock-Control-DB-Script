@@ -1,0 +1,556 @@
+USE [master]
+GO
+/****** Object:  Database [ProStokKontrolDB]    Script Date: 2.04.2016 00:46:05 ******/
+CREATE DATABASE [ProStokKontrolDB]
+ CONTAINMENT = NONE
+ ON  PRIMARY 
+( NAME = N'ProStokKontrolDB', FILENAME = N'C:\Program Files\Microsoft SQL Server\MSSQL11.SQLEXPRESS\MSSQL\DATA\ProStokKontrolDB.mdf' , SIZE = 5120KB , MAXSIZE = UNLIMITED, FILEGROWTH = 1024KB )
+ LOG ON 
+( NAME = N'ProStokKontrolDB_log', FILENAME = N'C:\Program Files\Microsoft SQL Server\MSSQL11.SQLEXPRESS\MSSQL\DATA\ProStokKontrolDB_log.ldf' , SIZE = 2048KB , MAXSIZE = 2048GB , FILEGROWTH = 10%)
+GO
+ALTER DATABASE [ProStokKontrolDB] SET COMPATIBILITY_LEVEL = 110
+GO
+IF (1 = FULLTEXTSERVICEPROPERTY('IsFullTextInstalled'))
+begin
+EXEC [ProStokKontrolDB].[dbo].[sp_fulltext_database] @action = 'enable'
+end
+GO
+ALTER DATABASE [ProStokKontrolDB] SET ANSI_NULL_DEFAULT OFF 
+GO
+ALTER DATABASE [ProStokKontrolDB] SET ANSI_NULLS OFF 
+GO
+ALTER DATABASE [ProStokKontrolDB] SET ANSI_PADDING OFF 
+GO
+ALTER DATABASE [ProStokKontrolDB] SET ANSI_WARNINGS OFF 
+GO
+ALTER DATABASE [ProStokKontrolDB] SET ARITHABORT OFF 
+GO
+ALTER DATABASE [ProStokKontrolDB] SET AUTO_CLOSE OFF 
+GO
+ALTER DATABASE [ProStokKontrolDB] SET AUTO_CREATE_STATISTICS ON 
+GO
+ALTER DATABASE [ProStokKontrolDB] SET AUTO_SHRINK OFF 
+GO
+ALTER DATABASE [ProStokKontrolDB] SET AUTO_UPDATE_STATISTICS ON 
+GO
+ALTER DATABASE [ProStokKontrolDB] SET CURSOR_CLOSE_ON_COMMIT OFF 
+GO
+ALTER DATABASE [ProStokKontrolDB] SET CURSOR_DEFAULT  GLOBAL 
+GO
+ALTER DATABASE [ProStokKontrolDB] SET CONCAT_NULL_YIELDS_NULL OFF 
+GO
+ALTER DATABASE [ProStokKontrolDB] SET NUMERIC_ROUNDABORT OFF 
+GO
+ALTER DATABASE [ProStokKontrolDB] SET QUOTED_IDENTIFIER OFF 
+GO
+ALTER DATABASE [ProStokKontrolDB] SET RECURSIVE_TRIGGERS OFF 
+GO
+ALTER DATABASE [ProStokKontrolDB] SET  DISABLE_BROKER 
+GO
+ALTER DATABASE [ProStokKontrolDB] SET AUTO_UPDATE_STATISTICS_ASYNC OFF 
+GO
+ALTER DATABASE [ProStokKontrolDB] SET DATE_CORRELATION_OPTIMIZATION OFF 
+GO
+ALTER DATABASE [ProStokKontrolDB] SET TRUSTWORTHY OFF 
+GO
+ALTER DATABASE [ProStokKontrolDB] SET ALLOW_SNAPSHOT_ISOLATION OFF 
+GO
+ALTER DATABASE [ProStokKontrolDB] SET PARAMETERIZATION SIMPLE 
+GO
+ALTER DATABASE [ProStokKontrolDB] SET READ_COMMITTED_SNAPSHOT OFF 
+GO
+ALTER DATABASE [ProStokKontrolDB] SET HONOR_BROKER_PRIORITY OFF 
+GO
+ALTER DATABASE [ProStokKontrolDB] SET RECOVERY SIMPLE 
+GO
+ALTER DATABASE [ProStokKontrolDB] SET  MULTI_USER 
+GO
+ALTER DATABASE [ProStokKontrolDB] SET PAGE_VERIFY CHECKSUM  
+GO
+ALTER DATABASE [ProStokKontrolDB] SET DB_CHAINING OFF 
+GO
+ALTER DATABASE [ProStokKontrolDB] SET FILESTREAM( NON_TRANSACTED_ACCESS = OFF ) 
+GO
+ALTER DATABASE [ProStokKontrolDB] SET TARGET_RECOVERY_TIME = 0 SECONDS 
+GO
+USE [ProStokKontrolDB]
+GO
+/****** Object:  StoredProcedure [dbo].[MarkaEkle]    Script Date: 2.04.2016 00:46:05 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+create proc [dbo].[MarkaEkle]
+(
+@ad nvarchar(50),
+@sonuc nvarchar(100) output
+)
+as
+begin
+
+declare @adet int
+select @adet=count(MarkaAdi) from Marka where MarkaAdi=@ad
+if(@adet=0)
+begin
+	insert into Marka (MarkaAdi,Aktiflik) values (@ad,1)
+	set @sonuc='Yeni Marka Eklendi'
+end
+else
+begin
+	update Marka set Aktiflik=1 where MarkaAdi=@ad
+	set @sonuc='Marka Aktifleþtirildi'
+end
+
+end
+
+
+GO
+/****** Object:  StoredProcedure [dbo].[MarkaGuncelle]    Script Date: 2.04.2016 00:46:05 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create proc [dbo].[MarkaGuncelle]
+(
+@id int,
+@yeniad nvarchar(50),
+@sonuc nvarchar(100) output
+)
+as
+begin
+
+	declare @adet int
+	select @adet=count(MarkaAdi) from Marka 
+	where MarkaAdi=@yeniad and @id<>(select MarkaID from Marka where MarkaAdi=@yeniad)
+	if(@adet=0)
+	begin
+		update Marka set MarkaAdi=@yeniad where MarkaID=@id
+		set @sonuc='Güncellendi'
+	end
+	else
+	begin
+		update Marka set Aktiflik=1 where MarkaID=@id
+		set @sonuc='Bu Marka Zaten Mevcut.'
+	end
+	
+end
+
+
+GO
+/****** Object:  StoredProcedure [dbo].[PersonelEkle]    Script Date: 2.04.2016 00:46:05 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create proc [dbo].[PersonelEkle]
+(
+@ad nvarchar(50),
+@eposta nvarchar(100),
+@sifre nvarchar(100),
+@sonuc nvarchar(100) output
+)
+as
+begin
+	declare @adet int
+	select @adet=count(PersonelAdiSoyadi) from Personel where Eposta=@eposta
+	if(@adet=0)
+	begin
+		insert into Personel (PersonelAdiSoyadi,Eposta,Sifre,Aktiflik) values (@ad,@eposta,@sifre,1)
+		set @sonuc='Kayýt Tamam'
+	end
+	else
+	begin
+		declare @adet2 int
+		select @adet2=count(PersonelAdiSoyadi) from Personel where Eposta=@eposta and Aktiflik=1
+		if(@adet2=0)
+		begin
+			update Personel set Aktiflik=1 where Eposta=@eposta
+			set @sonuc='Bu kayýt tekrar aktif edilmiþtir'
+		end
+		else
+		begin
+			set @sonuc='Bu kayýt zaten aktif'
+		end
+	end
+
+end
+
+
+GO
+/****** Object:  StoredProcedure [dbo].[TedarikciEkle]    Script Date: 2.04.2016 00:46:05 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+Create proc [dbo].[TedarikciEkle]
+(
+@tedad nvarchar(100),
+@tel char(10),
+@fax char(10),
+@adres nvarchar(250),
+@per nvarchar(50),
+@epos nvarchar(50),
+@eknot nvarchar(max),
+@sonuc nvarchar(100) output,
+@id int output
+)
+as
+begin
+   declare @adet int
+   select @adet=count(TedarikciAdi) from Tedarikci where Telefon=@tel or Fax=@fax
+   if(@adet<>0)
+   begin
+		set @sonuc='Bu Firma Zaten Var'
+		select @id=TedarikciID from Tedarikci where Telefon=@tel or Fax=@fax
+		update Tedarikci set Aktiflik=1 where TedarikciID=@id
+  
+   end
+   else
+   begin
+		insert into Tedarikci(TedarikciAdi,Telefon,Fax,Adres,YetkiliPersonel,Eposta,Eknot,Aktiflik) values
+		(@tedad,@tel,@fax,@adres,@per,@epos,@eknot,1)
+		set @id=@@IDENTITY
+		set @sonuc='Tedarikçi Eklendi'
+   end
+
+end
+
+GO
+/****** Object:  StoredProcedure [dbo].[UrunEkle]    Script Date: 2.04.2016 00:46:05 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+create proc [dbo].[UrunEkle]
+(
+@ad nvarchar(200),
+@kstok int,
+@sfiyat decimal(10,2),
+@kid int,
+@mid int,
+@cins int,
+@yg int,
+@io decimal(4,2),
+@ek nvarchar(max),
+@sonuc nvarchar(100) output,
+@sonucid int output
+)
+as
+begin
+
+	declare @adet int
+	select @adet = count(UrunAdi) from urun where UrunAdi=@ad and KategoriID=@kid
+	if(@adet=0)
+	begin
+		insert into Urun (UrunAdi,KritikStok,SatisFiyati,KategoriID,MarkaID,Cinsiyet,YasGurubu,IskontoOrani,EkNot,Aktiflik) 
+		values (@ad,@kstok,@sfiyat,@kid,@mid,@cins,@yg,@io,@ek,1)
+		set @sonuc='Yeni ürün eklendi'
+		set @sonucid = @@IDENTITY
+	end
+	else
+	begin
+		select @adet = count(UrunAdi) from urun where UrunAdi=@ad and KategoriID=@kid and Aktiflik=1
+		if(@adet<>0)
+		begin
+			set @sonuc = 'Bu ürün daha önceden silinmiþti tekrar eklendi'
+			select @sonucid=UrunID from Urun where UrunAdi=@ad and KategoriID=@kid 
+		end
+		else 
+		begin
+			update Urun set Aktiflik=1 where UrunAdi=@ad and KategoriID=@kid
+			set @sonuc='Bu ürün Mevcut'
+			select @sonucid=UrunID from Urun where UrunAdi=@ad and KategoriID=@kid and Aktiflik=1
+		end
+	end
+
+
+
+end
+
+
+GO
+/****** Object:  Table [dbo].[Cinsiyet]    Script Date: 2.04.2016 00:46:05 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Cinsiyet](
+	[CinsiyetID] [int] IDENTITY(1,1) NOT NULL,
+	[CinsiyetAdi] [nvarchar](10) NULL,
+ CONSTRAINT [PK_Cinsiyet] PRIMARY KEY CLUSTERED 
+(
+	[CinsiyetID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+
+GO
+/****** Object:  Table [dbo].[Kategori]    Script Date: 2.04.2016 00:46:05 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Kategori](
+	[KategoriID] [int] IDENTITY(1,1) NOT NULL,
+	[KategoriAdi] [nvarchar](50) NULL,
+	[AnaKategori] [int] NULL,
+	[Aktiflik] [int] NULL,
+ CONSTRAINT [PK_Kategori] PRIMARY KEY CLUSTERED 
+(
+	[KategoriID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+
+GO
+/****** Object:  Table [dbo].[KategoriOzellik]    Script Date: 2.04.2016 00:46:05 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[KategoriOzellik](
+	[KategoriOzellikID] [int] IDENTITY(1,1) NOT NULL,
+	[KategoriID] [int] NULL,
+	[OzellikAdi] [nvarchar](20) NULL,
+	[Aktiflik] [int] NULL,
+ CONSTRAINT [PK_KategoriOzellik] PRIMARY KEY CLUSTERED 
+(
+	[KategoriOzellikID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+
+GO
+/****** Object:  Table [dbo].[Marka]    Script Date: 2.04.2016 00:46:05 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Marka](
+	[MarkaID] [int] IDENTITY(1,1) NOT NULL,
+	[MarkaAdi] [nvarchar](50) NULL,
+	[Aktiflik] [int] NULL,
+ CONSTRAINT [PK_MarkaAdý] PRIMARY KEY CLUSTERED 
+(
+	[MarkaID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+
+GO
+/****** Object:  Table [dbo].[Musteri]    Script Date: 2.04.2016 00:46:05 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+SET ANSI_PADDING ON
+GO
+CREATE TABLE [dbo].[Musteri](
+	[MusteriID] [int] IDENTITY(1,1) NOT NULL,
+	[MusteriAdiSoyadi] [nvarchar](50) NULL,
+	[Telefon] [char](10) NULL,
+	[Adres] [nvarchar](250) NULL,
+	[Eposta] [nvarchar](100) NULL,
+ CONSTRAINT [PK_Musteri] PRIMARY KEY CLUSTERED 
+(
+	[MusteriID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+
+GO
+SET ANSI_PADDING OFF
+GO
+/****** Object:  Table [dbo].[MusteriAlisVeris]    Script Date: 2.04.2016 00:46:05 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[MusteriAlisVeris](
+	[MusteriAlisverisID] [int] IDENTITY(1,1) NOT NULL,
+	[MusteriID] [int] NULL,
+	[UrunID] [int] NULL,
+	[Tarih] [date] NULL,
+	[Adet] [int] NULL,
+ CONSTRAINT [PK_MusteriAlisVeris] PRIMARY KEY CLUSTERED 
+(
+	[MusteriAlisverisID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+
+GO
+/****** Object:  Table [dbo].[Personel]    Script Date: 2.04.2016 00:46:05 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Personel](
+	[PersonelID] [int] IDENTITY(1,1) NOT NULL,
+	[PersonelAdiSoyadi] [nvarchar](50) NULL,
+	[Eposta] [nvarchar](100) NULL,
+	[Sifre] [nvarchar](100) NULL,
+	[Aktiflik] [int] NULL,
+ CONSTRAINT [PK_Personel] PRIMARY KEY CLUSTERED 
+(
+	[PersonelID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+
+GO
+/****** Object:  Table [dbo].[Tedarikci]    Script Date: 2.04.2016 00:46:05 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+SET ANSI_PADDING ON
+GO
+CREATE TABLE [dbo].[Tedarikci](
+	[TedarikciID] [int] IDENTITY(1,1) NOT NULL,
+	[TedarikciAdi] [nvarchar](100) NULL,
+	[Telefon] [char](10) NULL,
+	[Fax] [char](10) NULL,
+	[Adres] [nvarchar](250) NULL,
+	[YetkiliPersonel] [nvarchar](50) NULL,
+	[Eposta] [nvarchar](100) NULL,
+	[Eknot] [nvarchar](max) NULL,
+	[Aktiflik] [int] NULL,
+ CONSTRAINT [PK_Tedarikci] PRIMARY KEY CLUSTERED 
+(
+	[TedarikciID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+
+GO
+SET ANSI_PADDING OFF
+GO
+/****** Object:  Table [dbo].[Urun]    Script Date: 2.04.2016 00:46:05 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[Urun](
+	[UrunID] [int] IDENTITY(1,1) NOT NULL,
+	[UrunAdi] [nvarchar](200) NULL,
+	[KritikStok] [int] NULL,
+	[SatisFiyati] [decimal](10, 2) NULL,
+	[KategoriID] [int] NULL,
+	[MarkaID] [int] NULL,
+	[Cinsiyet] [int] NULL,
+	[YasGurubu] [int] NULL,
+	[IskontoOrani] [decimal](4, 2) NULL,
+	[EkNot] [nvarchar](max) NULL,
+	[Aktiflik] [int] NULL,
+ CONSTRAINT [PK_Urun] PRIMARY KEY CLUSTERED 
+(
+	[UrunID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+
+GO
+/****** Object:  Table [dbo].[UrunOzellik]    Script Date: 2.04.2016 00:46:05 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[UrunOzellik](
+	[UrunOzellikID] [int] IDENTITY(1,1) NOT NULL,
+	[UrunID] [int] NULL,
+	[KategoriOzellikID] [int] NULL,
+	[OzellikDegeri] [nvarchar](250) NULL,
+ CONSTRAINT [PK_UrunOzellik] PRIMARY KEY CLUSTERED 
+(
+	[UrunOzellikID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+
+GO
+/****** Object:  Table [dbo].[UrunStokGiris]    Script Date: 2.04.2016 00:46:05 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[UrunStokGiris](
+	[UrunStokGirisId] [int] IDENTITY(1,1) NOT NULL,
+	[UrunID] [int] NULL,
+	[TedarikciID] [int] NULL,
+	[Tarih] [date] NULL,
+	[Miktar] [int] NULL,
+	[BirimFiyat] [decimal](10, 2) NULL,
+	[PartiSeriNo] [nvarchar](50) NULL,
+ CONSTRAINT [PK_UrunStokGiris] PRIMARY KEY CLUSTERED 
+(
+	[UrunStokGirisId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+
+GO
+/****** Object:  Table [dbo].[YasGrubu]    Script Date: 2.04.2016 00:46:05 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[YasGrubu](
+	[YarsGrubuID] [int] IDENTITY(1,1) NOT NULL,
+	[YasGrubu] [nvarchar](20) NULL,
+ CONSTRAINT [PK_YasGrubu] PRIMARY KEY CLUSTERED 
+(
+	[YarsGrubuID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+
+GO
+ALTER TABLE [dbo].[KategoriOzellik]  WITH CHECK ADD  CONSTRAINT [FK_KategoriOzellik_Kategori] FOREIGN KEY([KategoriID])
+REFERENCES [dbo].[Kategori] ([KategoriID])
+GO
+ALTER TABLE [dbo].[KategoriOzellik] CHECK CONSTRAINT [FK_KategoriOzellik_Kategori]
+GO
+ALTER TABLE [dbo].[MusteriAlisVeris]  WITH CHECK ADD  CONSTRAINT [FK_MusteriAlisVeris_Musteri] FOREIGN KEY([MusteriID])
+REFERENCES [dbo].[Musteri] ([MusteriID])
+GO
+ALTER TABLE [dbo].[MusteriAlisVeris] CHECK CONSTRAINT [FK_MusteriAlisVeris_Musteri]
+GO
+ALTER TABLE [dbo].[MusteriAlisVeris]  WITH CHECK ADD  CONSTRAINT [FK_MusteriAlisVeris_Urun] FOREIGN KEY([UrunID])
+REFERENCES [dbo].[Urun] ([UrunID])
+GO
+ALTER TABLE [dbo].[MusteriAlisVeris] CHECK CONSTRAINT [FK_MusteriAlisVeris_Urun]
+GO
+ALTER TABLE [dbo].[Urun]  WITH CHECK ADD  CONSTRAINT [FK_Urun_Cinsiyet] FOREIGN KEY([Cinsiyet])
+REFERENCES [dbo].[Cinsiyet] ([CinsiyetID])
+GO
+ALTER TABLE [dbo].[Urun] CHECK CONSTRAINT [FK_Urun_Cinsiyet]
+GO
+ALTER TABLE [dbo].[Urun]  WITH CHECK ADD  CONSTRAINT [FK_Urun_Kategori] FOREIGN KEY([KategoriID])
+REFERENCES [dbo].[Kategori] ([KategoriID])
+GO
+ALTER TABLE [dbo].[Urun] CHECK CONSTRAINT [FK_Urun_Kategori]
+GO
+ALTER TABLE [dbo].[Urun]  WITH CHECK ADD  CONSTRAINT [FK_Urun_MarkaAdý] FOREIGN KEY([MarkaID])
+REFERENCES [dbo].[Marka] ([MarkaID])
+GO
+ALTER TABLE [dbo].[Urun] CHECK CONSTRAINT [FK_Urun_MarkaAdý]
+GO
+ALTER TABLE [dbo].[Urun]  WITH CHECK ADD  CONSTRAINT [FK_Urun_YasGrubu] FOREIGN KEY([YasGurubu])
+REFERENCES [dbo].[YasGrubu] ([YarsGrubuID])
+GO
+ALTER TABLE [dbo].[Urun] CHECK CONSTRAINT [FK_Urun_YasGrubu]
+GO
+ALTER TABLE [dbo].[UrunOzellik]  WITH CHECK ADD  CONSTRAINT [FK_UrunOzellik_KategoriOzellik] FOREIGN KEY([KategoriOzellikID])
+REFERENCES [dbo].[KategoriOzellik] ([KategoriOzellikID])
+GO
+ALTER TABLE [dbo].[UrunOzellik] CHECK CONSTRAINT [FK_UrunOzellik_KategoriOzellik]
+GO
+ALTER TABLE [dbo].[UrunOzellik]  WITH CHECK ADD  CONSTRAINT [FK_UrunOzellik_Urun] FOREIGN KEY([UrunID])
+REFERENCES [dbo].[Urun] ([UrunID])
+GO
+ALTER TABLE [dbo].[UrunOzellik] CHECK CONSTRAINT [FK_UrunOzellik_Urun]
+GO
+ALTER TABLE [dbo].[UrunStokGiris]  WITH CHECK ADD  CONSTRAINT [FK_UrunStokGiris_Tedarikci] FOREIGN KEY([TedarikciID])
+REFERENCES [dbo].[Tedarikci] ([TedarikciID])
+GO
+ALTER TABLE [dbo].[UrunStokGiris] CHECK CONSTRAINT [FK_UrunStokGiris_Tedarikci]
+GO
+ALTER TABLE [dbo].[UrunStokGiris]  WITH CHECK ADD  CONSTRAINT [FK_UrunStokGiris_Urun] FOREIGN KEY([UrunID])
+REFERENCES [dbo].[Urun] ([UrunID])
+GO
+ALTER TABLE [dbo].[UrunStokGiris] CHECK CONSTRAINT [FK_UrunStokGiris_Urun]
+GO
+USE [master]
+GO
+ALTER DATABASE [ProStokKontrolDB] SET  READ_WRITE 
+GO
